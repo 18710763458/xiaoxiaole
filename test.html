@@ -122,16 +122,16 @@
         // 设置游戏开始结束开关
         if (click == 0) {
             click = 2;
-//             time1 = setInterval(function () {
-//                 ready--;
-//                 djs();
-//             }, 500);
-//             time2 = setTimeout(function () {
+            time1 = setInterval(function () {
+                ready--;
+                djs();
+            }, 500);
+            time2 = setTimeout(function () {
                 start();
                 click = 1;
                 clearInterval(time1);
                 clearInterval(time2);
-//             }, 2000);
+            }, 2000);
 
         } else {
             clearInterval(time1);
