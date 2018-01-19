@@ -134,6 +134,8 @@
             }, 2000);
 
         } else {
+            clearInterval(time1);
+            clearInterval(time2);
             p = 0;//每次点击判断相同颜色小球的变量清空
             arr = [];//每次点击盛放重绘之前的小球的数组清空
             // var e = event || window.event;
