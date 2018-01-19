@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        #my {
+            background: black;
+            margin: 120px 20%;
+        }
+
+        .wrap {
+            width: 500px;
+            height: 100px;
+            text-align: center;
+            position: absolute;
+            left: 20%;
+        }
+
+        .wrap span {
+            font-size: 20px;
+            font-weight: bolder;
+            position: absolute;
+            left: 0;
+            top: 80px;
+        }
+
+        .wrap .xl {
+            width: 420px;
+            height: 20px;
+            line-height: 20px;
+            background: red;
+            margin: 10px auto;
+            border-radius: 20px;
+            position: absolute;
+            left: 80px;
+            top: 70px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+        <h1>另类消消乐</h1>
+        <span>得分：0</span>
+        <div class="xl"></div>
+    </div>
+    <canvas id="my" width="500" height="500"></canvas>
+</body>
+<script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+<script>
+    var mc = document.getElementById('my');
+    var ctx = mc.getContext('2d');
+    var rollArrb = [];//小球数组
+    var bgArr = ['red', 'yellow', 'white', 'pink', 'purple', 'green', 'grey'];//小球颜色
+    var p;//控制判断消除最少个数为3
+    var arr = [];//用于盛放颜色重绘之前的元素
+    var score = 0;//临时分数
+    var score2 = 0;//最终分数
+    var time;//计时器名称
+    var dx = 420;//掉血变量
+    var time1//倒计时函数
+    var time2;//延时计时器
+    var click = 0;//计时器开关
+    //封装随机数函数
+    function rn(x, y) {
+        return Math.round(Math.random() * (y - x) + x);
+    }
+    //创建小球的原型方法
+    //x：小球X坐标
+    //y：小球Y坐标
+    //bg：小球背景色
+    function Roll(x, y, bg) {
+        this.x = x;
+        this.y = y;
+        this.bg = bg;
+        this.flag = true;
+    }
+    //小球的原型方法
+    Roll.prototype.draw = function () {
+        this.r = 10;//小球半径为10
+        //画出小球
+        ctx.beginPath();
+        ctx.fillStyle = this.bg;
+        ctx.arc(this.x, this.y, this.r, 0, 2 * Math.PI);
+        ctx.fill();
+    }
+    //创建小球数组
+    var row;//声明行
+    var colum;//声明列
+    //实例化小球
+    function slh() {
+        for (var i = 0; i < mc.width / 20; i++) {//行
+            row = i * 2 * 10 + 10;//行圆心坐标
+            var rowArrs = [];//行数组
+            for (var j = 0; j < mc.height / 20; j++) {//列
+                colum = j * 2 * 10 + 10;//列圆心坐标
+                var newRoll = new Roll(colum, row, bgArr[rn(0, bgArr.length - 1)]);//实例化小球
+                rowArrs.push(newRoll);//小球放入行数组
+                newRoll.draw();//画出小球
+            }
+            rollArrb.push(rowArrs);
+        }
+    }
+
+    //设置小球的点击事件
+    function getEventPosition(ev) {
+    	console.log(ev);
+        var x, y;
+        if (ev.layerX || ev.layerX == 0) {
+            x = ev.layerX;
+            y = ev.layerY;
+        } else if (ev.offsetX || ev.offsetX == 0) { // Opera
+            x = ev.offsetX;
+            y = ev.offsetY;
+        }
+        return { x: x, y: y };
+    }
+    mc.addEventListener("click", function (e) {
+        pos = getEventPosition(e);
+        // 设置游戏开始结束开关
+        if (click == 0) {
+            click = 2;
+            time1 = setInterval(function () {
+                ready--;
+                djs();
+            }, 500);
+            time2 = setTimeout(function () {
+                start();
+                click = 1;
+                clearInterval(time1);
+                clearInterval(time2);
+            }, 2000);
+
+        } else {
+            p = 0;//每次点击判断相同颜色小球的变量清空
+            arr = [];//每次点击盛放重绘之前的小球的数组清空
+            // var e = event || window.event;
+            // mcX = e.clientX - mc.offsetLeft;//canvas坐标X
+            // mcY = e.clientY - mc.offsetTop;//canvas坐标Y
+            for (var i = 0; i < rollArrb.length; i++) {//小球行
+                for (var j = 0; j < rollArrb[i].length; j++) {//小球列
+                    //根据点击位置坐标和圆心坐标差值判断点击的事哪个小球
+                    if (Math.abs(pos.x - rollArrb[i][j].x) < 10 && Math.abs(pos.y - rollArrb[i][j].y) < 10) {
+                        //						round(i,j,rollArrb[i][j].bg);
+                        pd(i, j, rollArrb[i][j].bg);//判断小球上下左右是否与被点击对象同色	
+                        if (p >= 3) {
+                            score2 += score; //将临时分数的值累加获得最终分数
+                            $('.wrap span').text('得分:' + score2);
+                        }
+                    }
+                }
+            }
+        }
+    })
+    //判断小球上下左右是否与被点击对象同色
+    function pd(i, j, bg) {
+        p++;//每次调用pd函数让P加加
+        arr.push(rollArrb[i][j]);//将判断之后重绘之前的元素放进临时数组，如果超过三重绘，否则不响应，下次点击清空
+        //判断同色小球是否达到标准3
+        if (p >= 3) {
+            score = p;//将p的最终值赋给临时分数
+            // console.log(score);
+            //如果符合条件，用循环将符合条件的每个元素重绘
+            for (var q = 0; q < arr.length; q++) {
+                arr[q].bg = 'black';
+                arr[q].draw();
+            }
+        }
+        //设置被点击元素和重新赋值后的之前元素flag属性为false，规避死循环
+        rollArrb[i][j].flag = false;
+        if (i > 0 && rollArrb[i - 1][j].flag == true) {
+            if (rollArrb[i - 1][j].bg == bg) { //上
+                pd(i - 1, j, bg);//如果该元素和第一个元素同色那么再判断该元素其他三个方向
+                rollArrb[i - 1][j].flag = false;//之后元素应该规避的一个方向
+            }
+        }
+        if (i + 1 != 25 && rollArrb[i + 1][j].flag == true) {
+            if (rollArrb[i + 1][j].bg == bg) { //下
+                pd(i + 1, j, bg);
+                rollArrb[i + 1][j].flag = false;
+            }
+        }
+        if (j > 0 && rollArrb[i][j - 1].flag == true) {
+            if (rollArrb[i][j - 1].bg == bg) { //左
+                pd(i, j - 1, bg);
+                rollArrb[i][j - 1] = false;
+            }
+        }
+        if (j + 1 != 25 && rollArrb[i][j + 1].flag == true) {
+            if (rollArrb[i][j + 1].bg == bg) { //右
+                pd(i, j + 1, bg);
+                rollArrb[i][j + 1] = false;
+            }
+        }
+    }
+    //开始游戏
+    var ready = 4;
+    function start() {
+        ctx.clearRect(0, 0, 500, 500);
+        dx = 420;
+        rollArrb = [];
+        score = 0;
+        score2 = 0;
+        arr = [];
+        $('.xl').css({
+            'background': 'red',
+            'left': '80px'
+        });
+        $('.wrap span').text('得分：0');
+        slh();
+        time = setInterval(function () {
+            dx--;
+            $('.xl').css({ 'width': dx });
+            $('.xl').text(dx);
+            if (dx == 0) {
+                clearInterval(time);
+                $('.xl').css({
+                    'left': '200px',
+                    'width': '80',
+                    'background': 'white'
+                });
+                $('.xl').text('游戏结束');
+                ctx.clearRect(0, 0, 500, 500);
+                drawend();
+                click = 0;
+                ready = 4;
+            }
+        }, 100);
+    }
+    function drawtext() {
+        ctx.beginPath();
+        ctx.font = '30px Arial';
+        ctx.fillStyle = 'white';
+        ctx.fillText('点击黑色任意位置开始游戏', 70, 250);
+        ctx.fill();
+    }
+    drawtext();
+    function drawend() {
+        ctx.beginPath();
+        ctx.font = '50px Arial';
+        ctx.fillStyle = 'white';
+        ctx.fillText('最终得分：' + score2, 100, 220);
+        ctx.font = '20px Arial';
+        ctx.fillText('点击黑色任意位置再玩一把', 120, 270);
+        ctx.fill();
+    }
+    function djs() {
+        ctx.clearRect(0, 0, 500, 500);
+        ctx.beginPath();
+        ctx.font = '150px Arial';
+        ctx.fillStyle = 'white';
+        ctx.fillText(ready, 210, 280);
+        ctx.fill();
+    }
+
+</script>
+
+</html>
